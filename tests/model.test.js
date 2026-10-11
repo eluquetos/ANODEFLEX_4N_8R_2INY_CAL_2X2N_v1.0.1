@@ -19,7 +19,8 @@ assert.ok(throttled.currents[11]<operating.currents[11]);for(const id of ["31","
 const edited=model.simulate({VA:24,VB:24,...cables,fixed:{...nominal.fixed,31:nominal.fixed[31]+5},rheostats:zero});
 assert.ok(edited.currents[31]<operating.currents[31]);for(const id of ["11","12","21","22"])assert.ok(Math.abs(edited.currents[id]-operating.currents[id])<1e-12);
 const targets={11:1,12:.8,21:.7,22:.7,31:.6,32:.5,41:.4,42:.3};
-const adjustment=model.adjust({VA:24,VB:24,...cables,fixed:nominal.fixed,targets,maxReo:100});assert.equal(adjustment.feasible,true);
-const adjusted=model.simulate({VA:24,VB:24,...cables,fixed:nominal.fixed,rheostats:adjustment.rheostats});for(const id of model.IDS)assert.ok(Math.abs(adjusted.currents[id]-targets[id])<1e-12,`objetivo ${id}`);
+const adjustment=model.adjust({...cables,fixed:nominal.fixed,targets,maxReo:100});assert.equal(adjustment.feasible,true);
+assert.ok(adjustment.sides.A.zero.length>=1);assert.ok(adjustment.sides.B.zero.length>=1);assert.equal(Math.min(...Object.values(adjustment.rheostats)),0);
+const adjusted=model.simulate({VA:adjustment.VA,VB:adjustment.VB,...cables,fixed:nominal.fixed,rheostats:adjustment.rheostats});for(const id of model.IDS)assert.ok(Math.abs(adjusted.currents[id]-targets[id])<1e-12,`objetivo ${id}`);
 assert.throws(()=>model.dimension({VA:1,VB:24,...cables,currents}),error=>error.message==="voltage-exhausted"&&error.side==="A");
 console.log("Pruebas del modelo ANODEFLEX 2 + 2: correctas");

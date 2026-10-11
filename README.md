@@ -11,8 +11,8 @@ Aplicación web para calcular y regular un sistema ANODEFLEX alimentado desde el
 
 1. Ingrese las mediciones de campo A y B con los reóstatos en 0 Ω.
 2. Presione **Calcular resistencias**.
-3. En Regulación, modifique VA, VB, las resistencias del sistema, las corrientes o los reóstatos.
-4. Use **Calcular ajuste de reóstatos** para obtener un ajuste automático.
+3. En Regulación, ingrese las corrientes objetivo.
+4. Use **Calcular ajuste de reóstatos**. La aplicación calcula el voltaje mínimo de cada inyección y deja al menos un reóstato en 0 Ω por lado.
 
 Los casos se pueden exportar e importar como archivos JSON. La aplicación funciona en navegador y se puede instalar desde “Más opciones” cuando el navegador lo permita.
 

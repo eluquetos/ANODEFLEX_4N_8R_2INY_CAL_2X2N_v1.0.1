@@ -48,19 +48,19 @@
   }
 
   function adjustSide(input,side){
-    const {data,voltage,rcNear,rcFar}=validateSide(input,side),nearIds=data.ids.slice(0,2),farIds=data.ids.slice(2),targets=input.targets;
-    if(data.ids.some(id=>!finitePositive(targets[id])))throw new Error("invalid-target");
-    const iFar=sum(farIds.map(id=>targets[id])),iTotal=iFar+sum(nearIds.map(id=>targets[id])),vNear=voltage-iTotal*rcNear,vFar=vNear-iFar*rcFar;
-    if(vNear<=0||vFar<=0)return {side,feasible:false,reason:"voltage",voltages:{[data.near]:vNear,[data.far]:vFar},trunks:{[data.near]:iTotal,[data.far]:iFar}};
-    const rheostats={};nearIds.forEach(id=>rheostats[id]=vNear/targets[id]-input.fixed[id]);farIds.forEach(id=>rheostats[id]=vFar/targets[id]-input.fixed[id]);
-    const negative=data.ids.filter(id=>rheostats[id]<-1e-8),over=data.ids.filter(id=>rheostats[id]>input.maxReo+1e-8);
-    return {side,feasible:negative.length===0&&over.length===0,voltages:{[data.near]:vNear,[data.far]:vFar},trunks:{[data.near]:iTotal,[data.far]:iFar},rheostats,negative,over};
+    const data=SIDES[side],rcNear=Number(input[data.rcNear]),rcFar=Number(input[data.rcFar]),nearIds=data.ids.slice(0,2),farIds=data.ids.slice(2),targets=input.targets;
+    if(!Number.isFinite(rcNear)||rcNear<0||!Number.isFinite(rcFar)||rcFar<0||data.ids.some(id=>!finitePositive(targets[id])||!finitePositive(input.fixed[id])))throw new Error("invalid-target");
+    const iFar=sum(farIds.map(id=>targets[id])),iTotal=iFar+sum(nearIds.map(id=>targets[id])),dropNear=iTotal*rcNear,dropFar=dropNear+iFar*rcFar;
+    const voltage=Math.max(...nearIds.map(id=>dropNear+targets[id]*input.fixed[id]),...farIds.map(id=>dropFar+targets[id]*input.fixed[id])),vNear=voltage-dropNear,vFar=voltage-dropFar;
+    const rheostats={};nearIds.forEach(id=>{const value=vNear/targets[id]-input.fixed[id];rheostats[id]=Math.abs(value)<1e-8?0:value});farIds.forEach(id=>{const value=vFar/targets[id]-input.fixed[id];rheostats[id]=Math.abs(value)<1e-8?0:value});
+    const negative=data.ids.filter(id=>rheostats[id]<-1e-8),over=data.ids.filter(id=>rheostats[id]>input.maxReo+1e-8),zero=data.ids.filter(id=>rheostats[id]===0);
+    return {side,feasible:negative.length===0&&over.length===0,voltage,voltages:{[data.near]:vNear,[data.far]:vFar},trunks:{[data.near]:iTotal,[data.far]:iFar},rheostats,negative,over,zero};
   }
 
   function adjust(input){
     if(!finitePositive(input.maxReo))throw new Error("invalid-target");
     const a=adjustSide(input,"A"),b=adjustSide(input,"B");
-    return {feasible:a.feasible&&b.feasible,reason:a.reason||b.reason,sides:{A:a,B:b},voltages:{...a.voltages,...b.voltages},trunks:{...a.trunks,...b.trunks},rheostats:{...(a.rheostats||{}),...(b.rheostats||{})},negative:[...(a.negative||[]),...(b.negative||[])],over:[...(a.over||[]),...(b.over||[])]};
+    return {feasible:a.feasible&&b.feasible,VA:a.voltage,VB:b.voltage,sides:{A:a,B:b},voltages:{...a.voltages,...b.voltages},trunks:{...a.trunks,...b.trunks},rheostats:{...a.rheostats,...b.rheostats},negative:[...a.negative,...b.negative],over:[...a.over,...b.over],zero:[...a.zero,...b.zero]};
   }
 
   return {NODES,IDS,SIDES,dimension,simulate,adjust};
